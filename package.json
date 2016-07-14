@@ -1,28 +1,28 @@
 {
   "name": "n-level-cache",
-  "version": "0.0.1",
   "description": "Multi-level cache with any number of levels and gracefully fallback to the computed value",
-  "main": "index.js",
-  "scripts": {
-    "test": "mocha"
+  "version": "0.0.2",
+  "author": "Chris Andrejewski <christopher.andrejewski@gmail.com>",
+  "bugs": {
+    "url": "https://github.com/andrejewski/n-level-cache/issues"
   },
+  "devDependencies": {
+    "mocha": "^2.5.3"
+  },
+  "homepage": "https://github.com/andrejewski/n-level-cache#readme",
+  "keywords": [
+    "cache",
+    "computed",
+    "layer",
+    "level"
+  ],
+  "license": "ISC",
+  "main": "index.js",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/andrejewski/n-level-cache.git"
   },
-  "keywords": [
-    "cache",
-    "level",
-    "layer",
-    "computed"
-  ],
-  "author": "Chris Andrejewski <christopher.andrejewski@gmail.com>",
-  "license": "ISC",
-  "bugs": {
-    "url": "https://github.com/andrejewski/n-level-cache/issues"
-  },
-  "homepage": "https://github.com/andrejewski/n-level-cache#readme",
-  "devDependencies": {
-    "mocha": "^2.5.3"
+  "scripts": {
+    "test": "mocha"
   }
 }
