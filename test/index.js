@@ -26,7 +26,7 @@ describe('n-level-cache', function() {
     const myValue = '123';
     const options = {
       caches: [],
-      relation: idRelation,
+      keyForQuery: idRelation,
       compute: function(key) {
         assert.equal(key, myKey);
         return Promise.resolve(myValue);
@@ -49,7 +49,7 @@ describe('n-level-cache', function() {
         mockLevel(reports, 'l2', null),
         mockLevel(reports, 'l3', null)
       ],
-      relation: idRelation,
+      keyForQuery: idRelation,
       compute: function(key) {
         assert.equal(key, myKey);
         return Promise.resolve(myValue);
@@ -79,7 +79,7 @@ describe('n-level-cache', function() {
         mockLevel(reports, 'l2', null),
         mockLevel(reports, 'l3', null)
       ],
-      relation: idRelation,
+      keyForQuery: idRelation,
       compute: function(key) {
         assert.equal(key, myKey);
         return Promise.resolve(myValue);

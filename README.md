@@ -82,11 +82,11 @@ nLevelCache({caches: browserCaches}, myKey).then(value => {
 ## Documentation
 
 `nLevelCache(options Object, query Any) Promise` accepts these options
-- `options.caches Array`: the list of caches to check for the given key, checked from first to last. Every cache needs:        
+- `options.caches Array`: caches to check for the given key, checked from first to last. Every cache needs:        
   - `get(key String, options Object) Promise`
   - `set(key String, value Any, options Object) Promise`
 - `options.compute (query Any) -> Promise`: function that computes the value if it is not found in any cache
-- `options.relation (query Any) -> String`: function that maps a query of any type to a string used as the lookup key for the caches
+- `options.keyForQuery (query Any) -> String`: function that maps a query of any type to a string used as the lookup key for the caches
 
 All options will also be passed to the caches.
 

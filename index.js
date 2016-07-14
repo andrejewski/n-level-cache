@@ -8,8 +8,8 @@ const empty = x => x === null || x === void 0;
 function nLevelCache(options, query) {
   const caches = options.caches || noCaches;
   const compute = options.compute || nothing;
-  const relation = options.relation || identity;
-  const key = relation(query);
+  const keyForQuery = options.keyForQuery || identity;
+  const key = keyForQuery(query);
   return readCaches(caches, key, options).then(readValue => {
     if (!empty(readValue)) return readValue;
     return compute(query).then(computedValue => {
