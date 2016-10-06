@@ -5,29 +5,16 @@ const nothing = () => Promise.resolve(null);
 const identity = x => x;
 const empty = x => x === null || x === void 0;
 
-function nLevelCache(options, query) {
-  const caches = options.caches || noCaches;
-  const compute = options.compute || nothing;
-  const keyForQuery = options.keyForQuery || identity;
-  const key = keyForQuery(query);
-  return readCaches(caches, key, options).then(readValue => {
-    if (!empty(readValue)) return readValue;
-    return compute(query).then(computedValue => {
-      return writeCaches(caches, key, computedValue, options)
-        .then(() => computedValue);
-    });
-  });
-}
-
 function promiseUntil(predicate, funcs, args, index) {
   index = index || 0;
   const func = funcs[index];
   if (!func) return Promise.resolve();
   return func.apply(null, args)
     .then(value => {
-      return predicate(value)
-        ? value
-        : promiseUntil(predicate, funcs, args, index + 1);
+      if (predicate(value)) {
+        return value;
+      }
+      return promiseUntil(predicate, funcs, args, index + 1);
     });
 }
 
@@ -43,4 +30,29 @@ function writeCaches(caches, key, value, options) {
   return promiseUntil(never, writers, [key, value, options]);
 }
 
-module.exports = nLevelCache;
+class NLevelCache {
+  constructor(options) {
+    this.caches = options.caches || noCaches;
+    this.compute = options.compute || nothing;
+    this.keyForQuery = options.keyForQuery || identity;
+    this.shouldCompute = options.shouldCompute || empty;
+  }
+
+  get(query, options) {
+    let key = this.keyForQuery(query);
+    return readCaches(this.caches, key, options).then(readValue => {
+      if (!this.shouldCompute(readValue)) return readValue;
+      return this.set(query, options, key);
+    });
+  }
+
+  set(query, options, key) {
+    return this.compute(query, options)
+      .then((value) => {
+        key = key || this.keyForQuery(query);
+        return writeCaches(this.caches, key, value, options).then(() => value);
+      });
+  }
+}
+
+module.exports = NLevelCache;
