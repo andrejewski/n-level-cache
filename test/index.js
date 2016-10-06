@@ -1,6 +1,6 @@
 'use strict';
 
-const nLevelCache = require('..');
+const NLevelCache = require('..');
 const assert = require('assert');
 
 function mockLevel(reporter, name, value) {
@@ -27,14 +27,16 @@ describe('n-level-cache', function() {
     const options = {
       caches: [],
       keyForQuery: idRelation,
-      compute: function(key) {
+      compute(key) {
         assert.equal(key, myKey);
         return Promise.resolve(myValue);
       }
     };
 
-    return nLevelCache(options, myKey)
-      .then(function(value) {
+    let nLevelCache = new NLevelCache(options);
+
+    return nLevelCache.get(myKey)
+      .then((value) => {
         assert.equal(value, myValue);
       });
   });
@@ -50,21 +52,24 @@ describe('n-level-cache', function() {
         mockLevel(reports, 'l3', null)
       ],
       keyForQuery: idRelation,
-      compute: function(key) {
+      compute(key) {
         assert.equal(key, myKey);
         return Promise.resolve(myValue);
       }
     };
 
-    return nLevelCache(options, myKey)
-      .then(function(value) {
+    let nLevelCache = new NLevelCache(options);
+
+    return nLevelCache.get(myKey)
+      .then((value) => {
         assert.equal(value, myValue);
 
-        [1, 2, 3].forEach(function(n) {
+        [1, 2, 3].forEach((n) => {
           const report = reports[n-1];
           assert.equal(report.name, `l${n}`);
           assert.equal(report.key, myKey);
           assert.equal(report.value, null);
+          assert.equal(report.method, 'get');
         });
       });
   });
@@ -80,21 +85,119 @@ describe('n-level-cache', function() {
         mockLevel(reports, 'l3', null)
       ],
       keyForQuery: idRelation,
-      compute: function(key) {
+      compute(key) {
         assert.equal(key, myKey);
         return Promise.resolve(myValue);
       }
     };
 
-    return nLevelCache(options, myKey)
-      .then(function(value) {
+    let nLevelCache = new NLevelCache(options);
+
+    return nLevelCache.get(myKey)
+      .then((value) => {
         assert.equal(value, myValue);
 
-        [3, 2, 1].forEach(function(n) {
+        [3, 2, 1].forEach((n) => {
           const report = reports[reports.length-n];
           assert.equal(report.name, `l${n}`);
           assert.equal(report.key, myKey);
           assert.equal(report.value, myValue);
+          assert.equal(report.method, 'set');
+        });
+      });
+  });
+
+  it('should not write to any caching levels if shouldCompute returns false', function() {
+    const myKey   = 'abc';
+    const myValue = '123';
+    const reports = [];
+    const options = {
+      caches: [
+        mockLevel(reports, 'l1', null),
+        mockLevel(reports, 'l2', null),
+        mockLevel(reports, 'l3', null)
+      ],
+      keyForQuery: idRelation,
+      shouldCompute(value) {
+        assert.equal(value, null);
+        return false;
+      }
+    };
+
+    let nLevelCache = new NLevelCache(options);
+
+    return nLevelCache.get(myKey)
+      .then((value) => {
+        assert.equal(value, null);
+
+        [1, 2, 3].forEach((n) => {
+          const report = reports[n-1];
+          assert.equal(report.name, `l${n}`);
+          assert.equal(report.key, myKey);
+          assert.equal(report.value, null);
+          assert.equal(report.method, 'get');
+        });
+      });
+  });
+
+  it('should write entry to all caches using set', function() {
+    const myKey   = 'abc';
+    const myValue = '123';
+    const reports = [];
+    const options = {
+      caches: [
+        mockLevel(reports, 'l1', null),
+        mockLevel(reports, 'l2', null),
+        mockLevel(reports, 'l3', null)
+      ],
+      keyForQuery: idRelation,
+      compute(key) {
+        assert.equal(key, myKey);
+        return Promise.resolve(myValue);
+      }
+    };
+
+    let nLevelCache = new NLevelCache(options);
+
+    return nLevelCache.set(myKey)
+      .then((value) => {
+        assert.equal(value, myValue);
+
+        [3, 2, 1].forEach((n) => {
+          const report = reports[reports.length-n];
+          assert.equal(report.name, `l${n}`);
+          assert.equal(report.key, myKey);
+          assert.equal(report.value, myValue);
+          assert.equal(report.method, 'set');
+        });
+      });
+  });
+
+  it('should write entry to all caches as null if compute is empty', function() {
+    const myKey   = 'abc';
+    const myValue = '123';
+    const reports = [];
+    const options = {
+      caches: [
+        mockLevel(reports, 'l1', null),
+        mockLevel(reports, 'l2', null),
+        mockLevel(reports, 'l3', null)
+      ],
+      keyForQuery: idRelation
+    };
+
+    let nLevelCache = new NLevelCache(options);
+
+    return nLevelCache.set(myKey)
+      .then((value) => {
+        assert.equal(value, null);
+
+        [3, 2, 1].forEach((n) => {
+          const report = reports[reports.length-n];
+          assert.equal(report.name, `l${n}`);
+          assert.equal(report.key, myKey);
+          assert.equal(report.value, null);
+          assert.equal(report.method, 'set');
         });
       });
   });

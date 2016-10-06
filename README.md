@@ -16,14 +16,14 @@ value <- cache1.set <- ... <- cacheN.set <-
 ## Examples
 
 ```js
-const nLevelCache = require('n-level-cache');
+const NLevelCache = require('n-level-cache');
 
 // example: Redis (promisified)
 class RedisCache {
   constructor(redis) {
     this.redis = redis;
   },
-  get(key) {
+  get(key, options) {
     return this.redis.get(key);
   },
   set(key, value, options) {
@@ -35,7 +35,7 @@ class RedisCache {
     }
 }
 
-nLevelCache({
+const nLevelCache = new NLevelCache({
   caches: [
     new RedisCache(redisClientL1),
     new RedisCache(redisClientL2),
@@ -47,9 +47,12 @@ nLevelCache({
     // and returned to the caller
     return myDatabase.users.findById(key);
   }
-}, userId).then(user => {
-  console.log(user);
 });
+
+return nLevelCache.get(userId)
+  .then((value) => {
+    // ...
+  });
 ```
 
 ```js
@@ -58,10 +61,10 @@ class LocalCache {
   constructor(storage) {
     this.storage = storage;
   },
-  get(key) {
+  get(key, options) {
     return Promise.resolve(JSON.parse(this.storage.getItem(key)));
   },
-  set(key, value) {
+  set(key, value, options) {
     this.storage.setItem(key, JSON.stringify(value));
     return Promise.resolve();
   }
@@ -72,21 +75,32 @@ const browserCaches = [
   new LocalCache(window.sessionStorage),
 ];
 
-nLevelCache({caches: browserCaches}, myKey).then(value => {
-  console.log(value);
-  // ^ will print the value if it is found in localStorage or
-  // sessionStorage, otherwise value is null
-});
+const nLevelCache = new NLevelCache({ caches: browserCaches });
+
+nLevelCache.get(myKey)
+  .then((value) => {
+    console.log(value);
+    // ^ will print the value if it is found in localStorage or
+    // sessionStorage, otherwise value is null
+  });
 ```
 
 ## Documentation
 
-`nLevelCache(options Object, query Any) Promise` accepts these options
+`NLevelCache(options Object)` accepts these options
 - `options.caches Array`: caches to check for the given key, checked from first to last. Every cache needs:        
   - `get(key String, options Object) Promise`
   - `set(key String, value Any, options Object) Promise`
 - `options.compute (query Any) -> Promise`: function that computes the value if it is not found in any cache
+- `options.shouldCompute Function`: should the value be computed if none are found in caches
 - `options.keyForQuery (query Any) -> String`: function that maps a query of any type to a string used as the lookup key for the caches
+
+`NLevelCache.get(query Any, options Object) Promise`: resolves with value if any found
+- `options Object`: any options that should be carried along to implemented cache get functions
+
+`NLevelCache.set(query Any, options Object, key String) Promise`: resolves with value if any found
+- `options Object`: any options that should be carried along to implemented cache set functions
+- `key String`: optional key to skip computing using keyForQuery
 
 All options will also be passed to the caches.
 
