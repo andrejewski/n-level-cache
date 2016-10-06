@@ -1,6 +1,5 @@
 'use strict';
 
-const noCaches = [];
 const nothing = () => Promise.resolve(null);
 const identity = x => x;
 const empty = x => x === null || x === void 0;
@@ -32,14 +31,14 @@ function writeCaches(caches, key, value, options) {
 
 class NLevelCache {
   constructor(options) {
-    this.caches = options.caches || noCaches;
+    this.caches = options.caches || [];
     this.compute = options.compute || nothing;
     this.keyForQuery = options.keyForQuery || identity;
     this.shouldCompute = options.shouldCompute || empty;
   }
 
   get(query, options) {
-    let key = this.keyForQuery(query);
+    const key = this.keyForQuery(query);
     return readCaches(this.caches, key, options).then(readValue => {
       if (!this.shouldCompute(readValue)) return readValue;
       return this.set(query, options, key);
@@ -48,7 +47,7 @@ class NLevelCache {
 
   set(query, options, key) {
     return this.compute(query, options)
-      .then((value) => {
+      .then(value => {
         key = key || this.keyForQuery(query);
         return writeCaches(this.caches, key, value, options).then(() => value);
       });

@@ -33,10 +33,10 @@ describe('n-level-cache', function() {
       }
     };
 
-    let nLevelCache = new NLevelCache(options);
+    const nLevelCache = new NLevelCache(options);
 
     return nLevelCache.get(myKey)
-      .then((value) => {
+      .then(value => {
         assert.equal(value, myValue);
       });
   });
@@ -58,13 +58,13 @@ describe('n-level-cache', function() {
       }
     };
 
-    let nLevelCache = new NLevelCache(options);
+    const nLevelCache = new NLevelCache(options);
 
     return nLevelCache.get(myKey)
-      .then((value) => {
+      .then(value => {
         assert.equal(value, myValue);
 
-        [1, 2, 3].forEach((n) => {
+        [1, 2, 3].forEach(n => {
           const report = reports[n-1];
           assert.equal(report.name, `l${n}`);
           assert.equal(report.key, myKey);
@@ -91,13 +91,13 @@ describe('n-level-cache', function() {
       }
     };
 
-    let nLevelCache = new NLevelCache(options);
+    const nLevelCache = new NLevelCache(options);
 
     return nLevelCache.get(myKey)
-      .then((value) => {
+      .then(value => {
         assert.equal(value, myValue);
 
-        [3, 2, 1].forEach((n) => {
+        [3, 2, 1].forEach(n => {
           const report = reports[reports.length-n];
           assert.equal(report.name, `l${n}`);
           assert.equal(report.key, myKey);
@@ -124,13 +124,13 @@ describe('n-level-cache', function() {
       }
     };
 
-    let nLevelCache = new NLevelCache(options);
+    const nLevelCache = new NLevelCache(options);
 
     return nLevelCache.get(myKey)
-      .then((value) => {
+      .then(value => {
         assert.equal(value, null);
 
-        [1, 2, 3].forEach((n) => {
+        [1, 2, 3].forEach(n => {
           const report = reports[n-1];
           assert.equal(report.name, `l${n}`);
           assert.equal(report.key, myKey);
@@ -157,13 +157,13 @@ describe('n-level-cache', function() {
       }
     };
 
-    let nLevelCache = new NLevelCache(options);
+    const nLevelCache = new NLevelCache(options);
 
     return nLevelCache.set(myKey)
-      .then((value) => {
+      .then(value => {
         assert.equal(value, myValue);
 
-        [3, 2, 1].forEach((n) => {
+        [3, 2, 1].forEach(n => {
           const report = reports[reports.length-n];
           assert.equal(report.name, `l${n}`);
           assert.equal(report.key, myKey);
@@ -186,13 +186,13 @@ describe('n-level-cache', function() {
       keyForQuery: idRelation
     };
 
-    let nLevelCache = new NLevelCache(options);
+    const nLevelCache = new NLevelCache(options);
 
     return nLevelCache.set(myKey)
-      .then((value) => {
+      .then(value => {
         assert.equal(value, null);
 
-        [3, 2, 1].forEach((n) => {
+        [3, 2, 1].forEach(n => {
           const report = reports[reports.length-n];
           assert.equal(report.name, `l${n}`);
           assert.equal(report.key, myKey);

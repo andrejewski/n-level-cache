@@ -50,7 +50,7 @@ const nLevelCache = new NLevelCache({
 });
 
 return nLevelCache.get(userId)
-  .then((value) => {
+  .then(value => {
     // ...
   });
 ```
@@ -78,7 +78,7 @@ const browserCaches = [
 const nLevelCache = new NLevelCache({ caches: browserCaches });
 
 nLevelCache.get(myKey)
-  .then((value) => {
+  .then(value => {
     console.log(value);
     // ^ will print the value if it is found in localStorage or
     // sessionStorage, otherwise value is null
@@ -92,17 +92,14 @@ nLevelCache.get(myKey)
   - `get(key String, options Object) Promise`
   - `set(key String, value Any, options Object) Promise`
 - `options.compute (query Any) -> Promise`: function that computes the value if it is not found in any cache
-- `options.shouldCompute Function`: should the value be computed if none are found in caches
+- `options.shouldCompute (value Any) -> Boolean`: should the value be computed if none are found in caches
 - `options.keyForQuery (query Any) -> String`: function that maps a query of any type to a string used as the lookup key for the caches
 
 `NLevelCache.get(query Any, options Object) Promise`: resolves with value if any found
 - `options Object`: any options that should be carried along to implemented cache get functions
 
-`NLevelCache.set(query Any, options Object, key String) Promise`: resolves with value if any found
+`NLevelCache.set(query Any, options Object) Promise`: resolves with value if any found
 - `options Object`: any options that should be carried along to implemented cache set functions
-- `key String`: optional key to skip computing using keyForQuery
-
-All options will also be passed to the caches.
 
 ## Contributing
 
