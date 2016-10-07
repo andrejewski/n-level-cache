@@ -42,7 +42,7 @@ const nLevelCache = new NLevelCache({
     // ...
   ],
   compute(key) {
-    // optional last report: if the cached value
+    // optional last resort: if the cached value
     // is not found it will be computed, cached,
     // and returned to the caller
     return myDatabase.users.findById(key);
