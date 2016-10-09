@@ -4,14 +4,6 @@ const nothing = () => Promise.resolve(null);
 const identity = x => x;
 const empty = x => x === null || x === void 0;
 
-function reverse(arr) {
-  let temp = [];
-  for (let i = arr.length - 1; i >= 0; i--) {
-    temp.push(arr[i]);
-  }
-  return temp;
-}
-
 function promiseUntil(predicate, funcs, args, index) {
   index = index || 0;
   const func = funcs[index];
@@ -39,7 +31,7 @@ class NLevelCache {
   constructor(options) {
     this.caches = options.caches || [];
     this.readers = this.caches.map(cache => cache.get);
-    this.writers = reverse(this.caches).map(cache => cache.set);
+    this.writers = [].concat(this.caches).reverse().map(cache => cache.set);
     this.compute = options.compute || nothing;
     this.keyForQuery = options.keyForQuery || identity;
     this.shouldCompute = options.shouldCompute || empty;
