@@ -201,4 +201,81 @@ describe('n-level-cache', function() {
         });
       });
   });
+
+  it('should store reversed version of caches', () => {
+    let caches = [
+      {
+        name: 'l1',
+        set() {},
+        get() {}
+      },
+      {
+        name: 'l2',
+        set() {},
+        get() {}
+      }
+    ];
+
+    const nLevelCache = new NLevelCache({
+      caches: caches
+    });
+
+    assert.deepEqual(nLevelCache.caches, caches);
+    assert.deepEqual(nLevelCache.readers, caches.map(cache => cache.get));
+    assert.deepEqual(nLevelCache.writers, caches.reverse().map(cache => cache.set));
+  });
+
+  it('should not modify original caches after writing', () => {
+    const myKey   = 'abc';
+    const reports = [];
+
+    let caches = [
+      mockLevel(reports, 'l1', null),
+      mockLevel(reports, 'l2', null),
+      mockLevel(reports, 'l3', null)
+    ];
+
+    const options = {
+      caches: caches,
+      keyForQuery: idRelation
+    };
+
+    const nLevelCache = new NLevelCache(options);
+
+    return nLevelCache.set(myKey)
+      .then(value => {
+        assert.deepEqual(nLevelCache.caches, caches);
+        assert.deepEqual(nLevelCache.readers, caches.map(cache => cache.get));
+        assert.deepEqual(nLevelCache.writers, caches.reverse().map(cache => cache.set));
+      });
+  });
+
+  it('should not modify original caches after reading', () => {
+    const myKey   = 'abc';
+    const myValue = '123';
+    const reports = [];
+
+    let caches = [
+      mockLevel(reports, 'l1', null),
+      mockLevel(reports, 'l2', null),
+      mockLevel(reports, 'l3', null)
+    ];
+
+    const options = {
+      caches: caches,
+      keyForQuery: idRelation,
+      compute(key) {
+        return Promise.resolve(myValue);
+      }
+    };
+
+    const nLevelCache = new NLevelCache(options);
+
+    return nLevelCache.get(myKey)
+      .then(value => {
+        assert.deepEqual(nLevelCache.caches, caches);
+        assert.deepEqual(nLevelCache.readers, caches.map(cache => cache.get));
+        assert.deepEqual(nLevelCache.writers, caches.reverse().map(cache => cache.set));
+      });
+  });
 });
