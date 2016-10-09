@@ -17,14 +17,12 @@ function promiseUntil(predicate, funcs, args, index) {
     });
 }
 
-function readCaches(caches, key, options) {
-  const readers = caches.map(cache => cache.get);
+function readCaches(readers, key, options) {
   const firstFound = x => x;
   return promiseUntil(firstFound, readers, [key, options]);
 }
 
-function writeCaches(caches, key, value, options) {
-  const writers = caches.reverse().map(cache => cache.set);
+function writeCaches(writers, key, value, options) {
   const never = () => false;
   return promiseUntil(never, writers, [key, value, options]);
 }
@@ -32,6 +30,8 @@ function writeCaches(caches, key, value, options) {
 class NLevelCache {
   constructor(options) {
     this.caches = options.caches || [];
+    this.readers = this.caches.map(cache => cache.get);
+    this.writers = [].concat(this.caches).reverse().map(cache => cache.set);
     this.compute = options.compute || nothing;
     this.keyForQuery = options.keyForQuery || identity;
     this.shouldCompute = options.shouldCompute || empty;
@@ -39,7 +39,7 @@ class NLevelCache {
 
   get(query, options) {
     const key = this.keyForQuery(query);
-    return readCaches(this.caches, key, options).then(readValue => {
+    return readCaches(this.readers, key, options).then(readValue => {
       if (!this.shouldCompute(readValue)) return readValue;
       return this.set(query, options, key);
     });
@@ -49,7 +49,7 @@ class NLevelCache {
     return this.compute(query, options)
       .then(value => {
         key = key || this.keyForQuery(query);
-        return writeCaches(this.caches, key, value, options).then(() => value);
+        return writeCaches(this.writers, key, value, options).then(() => value);
       });
   }
 }
