@@ -4,27 +4,66 @@ const nothing = () => Promise.resolve(null);
 const identity = x => x;
 const empty = x => x === null || x === void 0;
 
-function promiseUntil(predicate, funcs, args, index) {
-  index = index || 0;
-  const func = funcs[index];
+class CacheValue {
+  constructor(options) {
+    this.cacheIndex = options.cacheIndex || 0;
+    this.value = options.value;
+  }
+
+  getCacheIndex() {
+    return this.cacheIndex;
+  }
+
+  getValue() {
+    return this.value;
+  }
+}
+
+function promiseUntil(predicate, funcs, args, cacheIndex) {
+  cacheIndex = cacheIndex || 0;
+  const func = funcs[cacheIndex];
   if (!func) return Promise.resolve();
   return func.apply(null, args)
     .then(value => {
       if (predicate(value)) {
-        return value;
+        return new CacheValue({
+          cacheIndex,
+          value
+        });
       }
-      return promiseUntil(predicate, funcs, args, index + 1);
+      return promiseUntil(predicate, funcs, args, cacheIndex + 1);
     });
 }
 
 function readCaches(readers, key, options) {
+  let promise = Promise.resolve();
   const firstFound = x => x;
   return promiseUntil(firstFound, readers, [key, options]);
 }
 
-function writeCaches(writers, key, value, options) {
-  const never = () => false;
-  return promiseUntil(never, writers, [key, value, options]);
+function writeCaches(writers, key, cacheValue, options) {
+  let promise = Promise.resolve();
+
+  function buildCacheValue(i) {
+    let writer = writers[i](key, cacheValue.getValue());
+    return writer.then((value) => new CacheValue({
+      cacheIndex: i,
+      value: value
+    }));
+  }
+
+  if (cacheValue.getCacheIndex()) {
+    let length = writers.length;
+    for (let i = length - cacheValue.getCacheIndex(); i < writers.length; i++) {
+      promise = promise.then(() => buildCacheValue(i));
+    }
+  } else {
+    for (let i = 0; i < writers.length; i++) {
+      promise = promise.then(() => buildCacheValue(i));
+    }
+  }
+
+  return promise;
 }
 
 class NLevelCache {
@@ -34,23 +73,39 @@ class NLevelCache {
     this.writers = [].concat(this.caches).reverse().map(cache => cache.set);
     this.compute = options.compute || nothing;
     this.keyForQuery = options.keyForQuery || identity;
-    this.shouldCompute = options.shouldCompute || empty;
+    this.shouldWrite = options.shouldWrite || empty;
   }
 
   get(query, options) {
+    options = options || {};
+
     const key = this.keyForQuery(query);
-    return readCaches(this.readers, key, options).then(readValue => {
-      if (!this.shouldCompute(readValue)) return readValue;
+    return readCaches(this.readers, key, options).then(cacheValue => {
+      let value = cacheValue && cacheValue.getValue();
+
+      if (!this.shouldWrite(cacheValue)) return value;
+
+      options._cacheValue = cacheValue;
       return this.set(query, options, key);
     });
   }
 
   set(query, options, key) {
-    return this.compute(query, options)
-      .then(value => {
-        key = key || this.keyForQuery(query);
-        return writeCaches(this.writers, key, value, options).then(() => value);
-      });
+    let promise;
+    let cacheValue;
+
+    if (options && (cacheValue = options._cacheValue)) {
+      promise = Promise.resolve(cacheValue);
+    } else {
+      promise = Promise.resolve(this.compute(query, options)
+        .then(value => new CacheValue({ value })));
+    }
+
+    return promise.then(cacheValue => {
+      key = key || this.keyForQuery(query);
+      return writeCaches(this.writers, key, cacheValue, options)
+        .then(() => cacheValue.getValue());
+    });
   }
 }
 
