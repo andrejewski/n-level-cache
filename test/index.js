@@ -5,12 +5,12 @@ const assert = require('assert');
 
 function mockLevel(reporter, name, value) {
   return {
-    get(key) {
-      reporter.push({method: 'get', name: name, key: key, value: value});
+    get(key, options) {
+      reporter.push({method: 'get', name, key, value});
       return Promise.resolve(value);
     },
-    set(key, newValue) {
-      reporter.push({method: 'set', name: name, key: key, value: newValue});
+    set(key, value, options) {
+      reporter.push({method: 'set', name, key, value});
       return Promise.resolve();
     }
   };
