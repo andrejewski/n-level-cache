@@ -36,7 +36,6 @@ function promiseUntil(predicate, funcs, args, cacheIndex) {
 }
 
 function readCaches(readers, key, options) {
-  let promise = Promise.resolve();
   const firstFound = x => x;
   return promiseUntil(firstFound, readers, [key, options]);
 }
