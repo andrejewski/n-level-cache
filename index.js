@@ -53,7 +53,7 @@ function writeCaches(writers, key, cacheValue, options) {
 
   if (cacheValue.getCacheIndex()) {
     let length = writers.length;
-    for (let i = length - cacheValue.getCacheIndex(); i < writers.length; i++) {
+    for (let i = length - cacheValue.getCacheIndex(); i < length; i++) {
       promise = promise.then(() => buildCacheValue(i));
     }
   } else {
