@@ -44,7 +44,7 @@ function writeCaches(writers, key, cacheValue, options) {
   let promise = Promise.resolve();
 
   function buildCacheValue(i) {
-    let writer = writers[i](key, cacheValue.getValue());
+    let writer = writers[i](key, cacheValue.getValue(), options);
     return writer.then((value) => new CacheValue({
       cacheIndex: i,
       value: value

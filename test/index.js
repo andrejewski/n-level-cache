@@ -387,4 +387,64 @@ describe('n-level-cache', function() {
         ]);
       });
   });
+
+  it('should carry options to get', () => {
+    const myKey   = 'abc';
+    const myValue = '123';
+
+    const fnOptions = {
+      test: true
+    };
+
+    let caches = [{
+      get(key, options) {
+        assert.deepEqual(options, fnOptions);
+        return Promise.resolve();
+      }
+    }];
+
+    const options = {
+      caches: caches,
+      keyForQuery: idRelation,
+      shouldWrite(cacheValue) {
+        return false;
+      },
+      compute(key) {
+        return Promise.resolve(myValue);
+      }
+    };
+
+    const nLevelCache = new NLevelCache(options);
+    return nLevelCache.get(myKey, fnOptions);
+  });
+
+  it('should carry options to set', () => {
+    const myKey   = 'abc';
+    const myValue = '123';
+
+    const fnOptions = {
+      test: true
+    };
+
+    let caches = [{
+      set(key, value, options) {
+        assert.deepEqual(options, fnOptions);
+        return Promise.resolve(myValue);
+      }
+    }];
+
+    const options = {
+      caches: caches,
+      keyForQuery: idRelation,
+      shouldWrite(cacheValue) {
+        return false;
+      },
+      compute(key) {
+        return Promise.resolve(myValue);
+      }
+    };
+
+    const nLevelCache = new NLevelCache(options);
+    return nLevelCache.set(myKey, fnOptions);
+  });
 });
