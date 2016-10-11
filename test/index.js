@@ -5,12 +5,12 @@ const assert = require('assert');
 
 function mockLevel(reporter, name, value) {
   return {
-    get(key) {
-      reporter.push({method: 'get', name: name, key: key, value: value});
+    get(key, options) {
+      reporter.push({method: 'get', name, key, value});
       return Promise.resolve(value);
     },
-    set(key, newValue) {
-      reporter.push({method: 'set', name: name, key: key, value: newValue});
+    set(key, value, options) {
+      reporter.push({method: 'set', name, key, value});
       return Promise.resolve();
     }
   };
@@ -107,7 +107,7 @@ describe('n-level-cache', function() {
       });
   });
 
-  it('should not write to any caching levels if shouldCompute returns false', function() {
+  it('should not write to any caching levels if shouldWrite returns false', function() {
     const myKey   = 'abc';
     const myValue = '123';
     const reports = [];
@@ -118,7 +118,7 @@ describe('n-level-cache', function() {
         mockLevel(reports, 'l3', null)
       ],
       keyForQuery: idRelation,
-      shouldCompute(value) {
+      shouldWrite(value) {
         assert.equal(value, null);
         return false;
       }
@@ -277,5 +277,174 @@ describe('n-level-cache', function() {
         assert.deepEqual(nLevelCache.readers, caches.map(cache => cache.get));
         assert.deepEqual(nLevelCache.writers, caches.reverse().map(cache => cache.set));
       });
+  });
+
+  it('should write to lower level caches if found in highest caches', () => {
+    const myKey   = 'abc';
+    const myValue = '123';
+    const reports = [];
+
+    let caches = [
+      mockLevel(reports, 'l1', null),
+      mockLevel(reports, 'l2', null),
+      mockLevel(reports, 'l3', myValue)
+    ];
+
+    const options = {
+      caches: caches,
+      keyForQuery: idRelation,
+      shouldWrite(cacheValue) {
+        assert.equal(cacheValue.getCacheIndex(), 2);
+        assert.equal(cacheValue.getValue(), myValue);
+        return true;
+      },
+      compute(key) {
+        return Promise.resolve(myValue);
+      }
+    };
+
+    const nLevelCache = new NLevelCache(options);
+
+    return nLevelCache.get(myKey)
+      .then(value => {
+        assert.deepEqual(reports, [
+          { method: 'get', name: 'l1', key: myKey, value: null },
+          { method: 'get', name: 'l2', key: myKey, value: null },
+          // l3 has the value, and should be written to l2 and l1.
+          { method: 'get', name: 'l3', key: myKey, value: myValue },
+          { method: 'set', name: 'l2', key: myKey, value: myValue },
+          { method: 'set', name: 'l1', key: myKey, value: myValue }
+        ]);
+      });
+  });
+
+  it('should only write to lower level caches if found in non-highest', () => {
+    const myKey   = 'abc';
+    const myValue = '123';
+    const reports = [];
+
+    let caches = [
+      mockLevel(reports, 'l1', null),
+      mockLevel(reports, 'l2', myValue),
+      mockLevel(reports, 'l3', myValue)
+    ];
+
+    const options = {
+      caches: caches,
+      keyForQuery: idRelation,
+      shouldWrite(cacheValue) {
+        assert.equal(cacheValue.getCacheIndex(), 1);
+        assert.equal(cacheValue.getValue(), myValue);
+        return true;
+      },
+      compute(key) {
+        return Promise.resolve(myValue);
+      }
+    };
+
+    const nLevelCache = new NLevelCache(options);
+
+    return nLevelCache.get(myKey)
+      .then(value => {
+        assert.deepEqual(reports, [
+          { method: 'get', name: 'l1', key: myKey, value: null },
+          { method: 'get', name: 'l2', key: myKey, value: myValue },
+          { method: 'set', name: 'l1', key: myKey, value: myValue }
+        ]);
+      });
+  });
+
+  it('should not write to any caches if found in any cache and shouldWrite returns false', () => {
+    const myKey   = 'abc';
+    const myValue = '123';
+    const reports = [];
+
+    let caches = [
+      mockLevel(reports, 'l1', myValue),
+      mockLevel(reports, 'l2', myValue),
+      mockLevel(reports, 'l3', myValue)
+    ];
+
+    const options = {
+      caches: caches,
+      keyForQuery: idRelation,
+      shouldWrite(cacheValue) {
+        assert.equal(cacheValue.getCacheIndex(), 0);
+        assert.equal(cacheValue.getValue(), myValue);
+        return !cacheValue;
+      },
+      compute(key) {
+        return Promise.resolve(myValue);
+      }
+    };
+
+    const nLevelCache = new NLevelCache(options);
+
+    return nLevelCache.get(myKey)
+      .then(value => {
+        assert.deepEqual(reports, [
+          { method: 'get', name: 'l1', key: myKey, value: myValue }
+        ]);
+      });
+  });
+
+  it('should carry options to get', () => {
+    const myKey   = 'abc';
+    const myValue = '123';
+
+    const fnOptions = {
+      test: true
+    };
+
+    let caches = [{
+      get(key, options) {
+        assert.deepEqual(options, fnOptions);
+        return Promise.resolve();
+      }
+    }];
+
+    const options = {
+      caches: caches,
+      keyForQuery: idRelation,
+      shouldWrite(cacheValue) {
+        return false;
+      },
+      compute(key) {
+        return Promise.resolve(myValue);
+      }
+    };
+
+    const nLevelCache = new NLevelCache(options);
+    return nLevelCache.get(myKey, fnOptions);
+  });
+
+  it('should carry options to set', () => {
+    const myKey   = 'abc';
+    const myValue = '123';
+
+    const fnOptions = {
+      test: true
+    };
+
+    let caches = [{
+      set(key, value, options) {
+        assert.deepEqual(options, fnOptions);
+        return Promise.resolve(myValue);
+      }
+    }];
+
+    const options = {
+      caches: caches,
+      keyForQuery: idRelation,
+      shouldWrite(cacheValue) {
+        return false;
+      },
+      compute(key) {
+        return Promise.resolve(myValue);
+      }
+    };
+
+    const nLevelCache = new NLevelCache(options);
+    return nLevelCache.set(myKey, fnOptions);
   });
 });

@@ -92,7 +92,7 @@ nLevelCache.get(myKey)
   - `get(key String, options Object) Promise`
   - `set(key String, value Any, options Object) Promise`
 - `options.compute (query Any) -> Promise`: function that computes the value if it is not found in any cache
-- `options.shouldCompute (value Any) -> Boolean`: should the value be computed if none are found in caches
+- `options.shouldWrite (value Any) -> Boolean`: should the value be written to caches if none are found in caches
 - `options.keyForQuery (query Any) -> String`: function that maps a query of any type to a string used as the lookup key for the caches
 
 `NLevelCache.get(query Any, options Object) Promise`: resolves with value if any found
