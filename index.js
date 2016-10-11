@@ -6,7 +6,7 @@ class NLevelCache {
     this.caches = caches || [];
     this.readers = caches.map(cache => cache.get);
     this.writers = caches.map(cache => cache.set).reverse();
-    this.compute = compute || (() => Promise.resolve(null));
+    this.compute = compute || (() => Promise.resolve(void 0));
     this.isValue = isValue || (x => x !== null && x !== void 0);
     this.hydrate = hydrate || true;
     this.keyForQuery = keyForQuery || (x => x);

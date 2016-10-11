@@ -107,7 +107,7 @@ describe('n-level-cache', function() {
       });
   });
 
-  it('should not write to any caching levels if shouldWrite returns false', function() {
+  it('should, if computed value is not valid, not write to any caching levels', function() {
     const myKey   = 'abc';
     const myValue = '123';
     const reports = [];
@@ -118,10 +118,7 @@ describe('n-level-cache', function() {
         mockLevel(reports, 'l3', null)
       ],
       keyForQuery: idRelation,
-      shouldWrite(value) {
-        assert.equal(value, null);
-        return false;
-      }
+      hydrate: false
     };
 
     const nLevelCache = new NLevelCache(options);
@@ -225,7 +222,7 @@ describe('n-level-cache', function() {
     assert.deepEqual(nLevelCache.writers, caches.reverse().map(cache => cache.set));
   });
 
-  it('should not modify original caches after writing', () => {
+  it('set(query, options) should not modify original caches', () => {
     const myKey   = 'abc';
     const reports = [];
 
@@ -250,7 +247,7 @@ describe('n-level-cache', function() {
       });
   });
 
-  it('should not modify original caches after reading', () => {
+  it('get(query, options) should not modify original caches', () => {
     const myKey   = 'abc';
     const myValue = '123';
     const reports = [];

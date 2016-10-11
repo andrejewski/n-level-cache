@@ -101,7 +101,7 @@ const NLevelCache = new NLevelCache({
     // computes the value if it is not found in any cache
     // query and options are passed directly from set/get
     // must return a promise
-    return Promise.resolve(null);
+    return Promise.resolve(void 0);
   },
 
   isValue(x) {
