@@ -279,7 +279,7 @@ describe('n-level-cache', function() {
       });
   });
 
-  it('should write to lower level caches if found in highest caches', () => {
+  it('should write to lower caches if found in higher caches', () => {
     const myKey   = 'abc';
     const myValue = '123';
     const reports = [];
@@ -293,11 +293,7 @@ describe('n-level-cache', function() {
     const options = {
       caches: caches,
       keyForQuery: idRelation,
-      shouldWrite(cacheValue) {
-        assert.equal(cacheValue.getCacheIndex(), 2);
-        assert.equal(cacheValue.getValue(), myValue);
-        return true;
-      },
+      hydrate: true,
       compute(key) {
         return Promise.resolve(myValue);
       }
@@ -318,7 +314,7 @@ describe('n-level-cache', function() {
       });
   });
 
-  it('should only write to lower level caches if found in non-highest', () => {
+  it('should only write to lower caches if found in non-highest', () => {
     const myKey   = 'abc';
     const myValue = '123';
     const reports = [];
@@ -332,11 +328,7 @@ describe('n-level-cache', function() {
     const options = {
       caches: caches,
       keyForQuery: idRelation,
-      shouldWrite(cacheValue) {
-        assert.equal(cacheValue.getCacheIndex(), 1);
-        assert.equal(cacheValue.getValue(), myValue);
-        return true;
-      },
+      hydrate: true,
       compute(key) {
         return Promise.resolve(myValue);
       }
@@ -354,7 +346,7 @@ describe('n-level-cache', function() {
       });
   });
 
-  it('should not write to any caches if found in any cache and shouldWrite returns false', () => {
+  it('should, if hydrate is false, not hydrate lower caches with a cache hit', () => {
     const myKey   = 'abc';
     const myValue = '123';
     const reports = [];
@@ -368,11 +360,7 @@ describe('n-level-cache', function() {
     const options = {
       caches: caches,
       keyForQuery: idRelation,
-      shouldWrite(cacheValue) {
-        assert.equal(cacheValue.getCacheIndex(), 0);
-        assert.equal(cacheValue.getValue(), myValue);
-        return !cacheValue;
-      },
+      hydrate: false,
       compute(key) {
         return Promise.resolve(myValue);
       }
@@ -388,7 +376,7 @@ describe('n-level-cache', function() {
       });
   });
 
-  it('should carry options to get', () => {
+  it('get(query, options) should carry options to each cache.get(key, options)', () => {
     const myKey   = 'abc';
     const myValue = '123';
 
@@ -400,15 +388,16 @@ describe('n-level-cache', function() {
       get(key, options) {
         assert.deepEqual(options, fnOptions);
         return Promise.resolve();
+      },
+      set() {
+        return Promise.resolve();
       }
     }];
 
     const options = {
       caches: caches,
       keyForQuery: idRelation,
-      shouldWrite(cacheValue) {
-        return false;
-      },
+      hydrate: false,
       compute(key) {
         return Promise.resolve(myValue);
       }
@@ -418,7 +407,7 @@ describe('n-level-cache', function() {
     return nLevelCache.get(myKey, fnOptions);
   });
 
-  it('should carry options to set', () => {
+  it('set(query, options) should carry options to each cache.set(key, options)', () => {
     const myKey   = 'abc';
     const myValue = '123';
 
@@ -436,9 +425,7 @@ describe('n-level-cache', function() {
     const options = {
       caches: caches,
       keyForQuery: idRelation,
-      shouldWrite(cacheValue) {
-        return false;
-      },
+      hydrate: false,
       compute(key) {
         return Promise.resolve(myValue);
       }

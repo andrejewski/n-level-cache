@@ -16,7 +16,7 @@ value <- cache1.set <- ... <- cacheN.set <-
 ## Examples
 
 ```js
-const NLevelCache = require('n-level-cache');
+const nLevelCache = require('n-level-cache');
 
 // example: Redis (promisified)
 class RedisCache {
@@ -87,18 +87,49 @@ nLevelCache.get(myKey)
 
 ## Documentation
 
-`NLevelCache(options Object)` accepts these options
-- `options.caches Array`: caches to check for the given key, checked from first to last. Every cache needs:        
-  - `get(key String, options Object) Promise`
-  - `set(key String, value Any, options Object) Promise`
-- `options.compute (query Any) -> Promise`: function that computes the value if it is not found in any cache
-- `options.shouldWrite (value Any) -> Boolean`: should the value be written to caches if none are found in caches
-- `options.keyForQuery (query Any) -> String`: function that maps a query of any type to a string used as the lookup key for the caches
+`class NLevelCache(options)`
+```js
+const NLevelCache = new NLevelCache({
+  // default options shown
+  caches: [], // get/checked from first to last
+              // set/written from last to first
+              // Each cache needs these methods:
+              // get(key, options) Promise<maybe value>
+              // set(key, value, options) Promise
 
-`NLevelCache.get(query Any, options Object) Promise`: resolves with value if any found
+  compute(query, options) {
+    // computes the value if it is not found in any cache
+    // query and options are passed directly from set/get
+    // must return a promise
+    return Promise.resolve(null);
+  },
+
+  isValue(x) {
+    // checks a value returned from a cache
+    // if true, the cache returned a useful value
+    // why have this? sometimes null/undefined may be valid results
+    return x !== null && x !== void 0;
+  },
+
+  hydrate: true,  // if true, if a value is found in a higher cache
+                  // that value is set on all lower caches
+                  // so the next time those caches have the value
+
+  keyForQuery(query) {
+    // returns a key for a given query
+    // why have this? compute() take a query that can be complex
+    // but caches only need a key.
+    // For example: compute({model: 'user', id: 'chris'})
+    // But the key would be "users:chris" if configured here
+    return query;
+  }
+});
+```
+
+`NLevelCache.get(query Any, options Object) Promise`: resolves with a cache value if found or otherwise the computed value
 - `options Object`: any options that should be carried along to implemented cache get functions
 
-`NLevelCache.set(query Any, options Object) Promise`: resolves with value if any found
+`NLevelCache.set(query Any, options Object) Promise`: resolves with computed value
 - `options Object`: any options that should be carried along to implemented cache set functions
 
 ## Contributing
