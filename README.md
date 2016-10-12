@@ -5,136 +5,150 @@ Multi-level cache with any number of levels and gracefully fallback to the compu
 npm install n-level-cache
 ```
 
-## Visual
+## Explanation
+Some systems have multiple layers of caching. On the server, these layers might be played by an in-memory data store (a hash map), any number of key-value data stores (Redis and Memcache), and finally a source of truth which is usually a database like Amazon's Dynamo or Postgres.
 
-```
-key   -> cache1.get -> ... -> cacheN.get ->
-                                            compute
-value <- cache1.set <- ... <- cacheN.set <-
-```
+The goal of `n-level-cache` is to abstract away all the plumbing of multi-level caching by
+
+- Reading from each cache one at a time, fastest to slowest, trying to get a cached value
+- Computing the source of truth value if no cached value is found and writing it to all cache levels and finally returning the value
+- Handling failures at any cache level, allowing other cache levels to work properly
+- Rehydrating faster caches with values from slower caches
+- Providing a consistent interface for building your caches and handling per-cache errors
 
 ## Examples
 
 ```js
-const nLevelCache = require('n-level-cache');
+const NLevelCache = require('n-level-cache')
 
 // example: Redis (promisified)
 class RedisCache {
-  constructor(redis) {
-    this.redis = redis;
+  constructor (redis) {
+    this.redis = redis
   },
-  get(key, options) {
-    return this.redis.get(key);
+  get (key, options) {
+    return this.redis.get(key)
   },
-  set(key, value, options) {
-      if (options.ttl) {
-        return this.redis.setex(key, options.ttl, value);
-      } else {
-        return this.redis.set(key, value);
-      }
+  set (key, value, options) {
+    if (options.ttl) {
+      return this.redis.setex(key, options.ttl, value)
     }
+    return this.redis.set(key, value)
+  },
+  onGetError (error) {/* log this */}
+  onSetError (error) {/* log this */}
 }
 
 const nLevelCache = new NLevelCache({
   caches: [
     new RedisCache(redisClientL1),
-    new RedisCache(redisClientL2),
-    // ...
+    new RedisCache(redisClientL2)
   ],
-  compute(key) {
+  compute (key) {
     // optional last resort: if the cached value
     // is not found it will be computed, cached,
     // and returned to the caller
-    return myDatabase.users.findById(key);
+    return myDatabase.users.findById(key)
   }
-});
+})
 
-return nLevelCache.get(userId)
-  .then(value => {
-    // ...
-  });
+return nLevelCache.get(userId).then(value => {
+  // ...
+})
 ```
 
 ```js
 // example: Local/SessionStorage (in browser only)
 class LocalCache {
-  constructor(storage) {
-    this.storage = storage;
+  constructor (storage) {
+    this.storage = storage
   },
-  get(key, options) {
-    return Promise.resolve(JSON.parse(this.storage.getItem(key)));
+  get (key, options) {
+    return Promise.resolve(JSON.parse(this.storage.getItem(key)))
   },
-  set(key, value, options) {
-    this.storage.setItem(key, JSON.stringify(value));
-    return Promise.resolve();
+  set (key, value, options) {
+    this.storage.setItem(key, JSON.stringify(value))
+    return Promise.resolve()
   }
 }
 
 const browserCaches = [
   new LocalCache(window.localStorage),
-  new LocalCache(window.sessionStorage),
-];
+  new LocalCache(window.sessionStorage)
+]
 
-const nLevelCache = new NLevelCache({ caches: browserCaches });
+const nLevelCache = new NLevelCache({ caches: browserCaches })
 
-nLevelCache.get(myKey)
-  .then(value => {
-    console.log(value);
-    // ^ will print the value if it is found in localStorage or
-    // sessionStorage, otherwise value is null
-  });
+nLevelCache.get(myKey).then(value => {
+  console.log(value)
+  // ^ will print the value if it is found in localStorage or
+  // sessionStorage, otherwise value is null
+})
 ```
 
 ## Documentation
 
-`class NLevelCache(options)`
+### class NLevelCache(options)
 ```js
-const NLevelCache = new NLevelCache({
+const nLevelCache = new NLevelCache({
   // default options shown
-  caches: [], // get/checked from first to last
-              // set/written from last to first
-              // Each cache needs these methods:
-              // get(key, options) Promise<maybe value>
-              // set(key, value, options) Promise
+  caches: [], // ordered by fastest to slowest
+              // see "Cache interface" below for details
 
-  compute(query, options) {
+  compute (query, options) {
     // computes the value if it is not found in any cache
     // query and options are passed directly from set/get
     // must return a promise
-    return Promise.resolve(void 0);
+    return Promise.resolve(void 0)
   },
 
-  isValue(x) {
+  isValue (x) {
     // checks a value returned from a cache
     // if true, the cache returned a useful value
-    // why have this? sometimes null/undefined may be valid results
-    return x !== null && x !== void 0;
+    // why have this? sometimes null may be considered valid
+    return x !== null && x !== void 0
   },
 
   hydrate: true,  // if true, if a value is found in a higher cache
                   // that value is set on all lower caches
                   // so the next time those caches have the value
 
-  keyForQuery(query) {
+  keyForQuery (query) {
     // returns a key for a given query
     // why have this? compute() take a query that can be complex
     // but caches only need a key.
     // For example: compute({model: 'user', id: 'chris'})
     // But the key would be "users:chris" if configured here
-    return query;
+    // (Don't implement if your caches have different key schemes)
+    return query
   }
-});
+})
 ```
 
-`NLevelCache.get(query Any, options Object) Promise`: resolves with a cache value if found or otherwise the computed value
-- `options Object`: any options that should be carried along to implemented cache get functions
+### NLevelCache.get(query Any, options Object) Promise
+Resolves with a cached value if found, otherwise the computed value. Rejects only if the computed value rejects. Any `options` passed will be passed along to the implemented cache methods.
 
-`NLevelCache.set(query Any, options Object) Promise`: resolves with computed value
-- `options Object`: any options that should be carried along to implemented cache set functions
+### NLevelCache.set(query Any, options Object) Promise
+Resolves with the computed value or rejects with the computed rejection. Writes the computed value to all caches as well. Any `options` passed will be passed along to the implemented cache methods.
+
+### Cache interface
+Caches passed to `n-level-cache` must fit the following interface. A cache does not have to be a class instance, it can be any object with these methods.
+
+```js
+class Cache {
+  // required methods (must return a Promise):
+  get (key, options) { return Promise.resolve(value) }
+  set (key, value, options) { return Promise.resolve() }
+
+  // optional error handlers
+  onGetError (error) {}
+  onSetError (error) {}
+}
+```
 
 ## Contributing
 
-Contributions are incredibly welcome as long as they are standardly applicable and pass the tests (or break bad ones). Tests are written in Mocha and assertions are done with the Node.js core `assert` module.
+Contributions are incredibly welcome as long as they are standardly applicable and pass the tests (or break bad ones). Tests are done with AVA.
 
 ```sh
 # running tests
