@@ -1,5 +1,5 @@
-const test = require('ava')
-const NLevelCache = require('../')
+import test from 'ava'
+import NLevelCache from '../lib/'
 
 function mockCache (store = {}) {
   const gets = []

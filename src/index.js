@@ -1,6 +1,6 @@
 'use strict'
 
-class NLevelCache {
+export default class NLevelCache {
   constructor (options = {}) {
     const {caches, compute, isValue, hydrate, keyForQuery} = options
     this.caches = caches || []
@@ -58,5 +58,3 @@ class NLevelCache {
     return Promise.all(writes).then(() => value)
   }
 }
-
-module.exports = NLevelCache
