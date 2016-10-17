@@ -1,7 +1,7 @@
 {
   "name": "n-level-cache",
   "description": "Multi-level cache with any number of levels and gracefully fallback to the computed value",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "author": "Chris Andrejewski <christopher.andrejewski@gmail.com>",
   "bugs": {
     "url": "https://github.com/andrejewski/n-level-cache/issues"
