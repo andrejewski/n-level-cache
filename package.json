@@ -7,7 +7,7 @@
     "url": "https://github.com/andrejewski/n-level-cache/issues"
   },
   "devDependencies": {
-    "ava": "^0.16.0",
+    "ava": "^0.19.1",
     "babel-polyfill": "^6.16.0",
     "babel-regenerator-runtime": "^6.5.0",
     "del": "^2.2.2",
@@ -16,7 +16,7 @@
     "gulp-eslint": "^3.0.1",
     "gulp-sourcemaps": "^2.1.1",
     "source-map-support": "^0.4.3",
-    "standard": "^8.4.0"
+    "standard": "^10.0.1"
   },
   "homepage": "https://github.com/andrejewski/n-level-cache#readme",
   "keywords": [
