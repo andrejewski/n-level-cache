@@ -1,4 +1,6 @@
 # n-level-cache
+
+[![Greenkeeper badge](https://badges.greenkeeper.io/andrejewski/n-level-cache.svg)](https://greenkeeper.io/)
 Multi-level cache with any number of levels and gracefully fallback to the computed value.
 
 ```sh
